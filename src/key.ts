@@ -1,9 +1,10 @@
 import { BIP32Factory, BIP32Interface } from 'bip32';
-import * as ecc from 'tiny-secp256k1'
 import { ec } from "elliptic";
 
 export async function generatePrivateKey(seed: globalThis.Buffer, path: string = `m/44'/118'/0'/0/0`): Promise<Buffer> {
-    const bip32 = BIP32Factory(ecc);
+    const ecc = await  import("tiny-secp256k1")
+    const module = await ecc.default;         //引入wasm对象
+    const bip32 = BIP32Factory(module);
     const masterSeed = bip32.fromSeed(seed);
     const hd = masterSeed.derivePath(path);
     const privateKey = hd.privateKey;

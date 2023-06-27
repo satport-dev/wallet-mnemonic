@@ -1,8 +1,8 @@
 const Mnemonic = require("bitcore-mnemonic");
-import * as ecc from 'tiny-secp256k1'
+
 import ECPairFactory, { ECPairInterface } from "ecpair";
 import * as bitcoin from 'bitcoinjs-lib';
-const ECPair = ECPairFactory(ecc);
+//const ECPair = ECPairFactory(ecc);
 /**
  * btc address type
  */
@@ -63,7 +63,12 @@ export enum NetworkType {
 }
 
 export type BTCNETWORK = "livenet" | "testnet"
-
+export const getEcPair = async ()=>{
+    const ecc = await  import("tiny-secp256k1")
+    const module = await ecc.default;    
+    const ECPair = ECPairFactory(module);
+    return ECPair
+}
 export function createRootFromMnemonic(mnemonic: string, hdPath: string, passphrase = "", network: BTCNETWORK = "livenet") {
     const hdWallet = new Mnemonic(mnemonic);
     const root = hdWallet.toHDPrivateKey(
@@ -74,9 +79,10 @@ export function createRootFromMnemonic(mnemonic: string, hdPath: string, passphr
     return root
 }
 
-export function createBtcPublicKey(mnemonic: string, hdPath: string, passphrase = "", network: BTCNETWORK = "livenet", index: number = 0):[string,ECPairInterface] {
+export async function createBtcPublicKey(mnemonic: string, hdPath: string, passphrase = "", network: BTCNETWORK = "livenet", index: number = 0):Promise<[string,ECPairInterface]> {
     const root = createRootFromMnemonic(mnemonic, hdPath, passphrase, network)
     const child = root.deriveChild(index);
+    const ECPair = await getEcPair()
     /** create private public keypair */
     const ecpair = ECPair.fromPrivateKey(child.privateKey.toBuffer());
     // get public key
@@ -130,11 +136,12 @@ export function publicKeyToAddress(publicKey: string, type: AddressType, network
     }
 }
 
-export function getBtcAddress(mnemonic: string, addressType: AddressType, hdPath: string, network: NetworkType, passphrase = "", index: number = 0) {
+export async function getBtcAddress(mnemonic: string, addressType: AddressType, hdPath: string, network: NetworkType, passphrase = "", index: number = 0) {
     const net = network == NetworkType.MAINNET ? "livenet" : "testnet"
-    const [pubKey, ecpair] = createBtcPublicKey(mnemonic, hdPath, passphrase, net, index)
+    const [pubKey, ecpair] =await createBtcPublicKey(mnemonic, hdPath, passphrase, net, index)
     const address = publicKeyToAddress(pubKey, addressType, network);
     const adnet = toPsbtNetwork(network);
+    const ECPair = await getEcPair()
     const b= ECPair.fromPrivateKey(Buffer.from(ecpair.privateKey!.toString("hex"), 'hex'), { network:adnet }).toWIF();
     console.log("privatekey",b)
     return address

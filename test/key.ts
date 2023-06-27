@@ -63,3 +63,4 @@ async function generateBtcAddress(){
 //generateEthAddress()
 //generateComos()
 generateBtcAddress()
+
